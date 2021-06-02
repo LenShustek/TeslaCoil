@@ -116,21 +116,24 @@ struct coil_instr_t {  // an assignment of a coil to an instrument
    const byte instrument; };
 struct scoredescr_t {  // a score description
    const char *name;       // ptr to the name
+   const int transpose;    // how many half-notes to transpose by, up or down
+   const int speed;        // initial speed tweak
    const byte *scoreptr;   // ptr to the score
+   const int scoresize;    // how long it is
    const struct coil_instr_t *assignments; }; // ptr to array of instrument assignments, or NULLP
 
 #if 0 // boring!
 #include "music\bach_allemande.h"
 struct scoredescr_t const scoredescr_bach_bwv1013_allemande = {
-   "Bach BWV1013 Allemande",
-   score_bach_bwv1013_allemande,
+   "Bach BWV1013 Allemande", 0,
+   score_bach_bwv1013_allemande, sizeof (score_bach_bwv1013_allemande),
    NULL /* all coils play all instruments */ };
 #endif
 
 #include "music\bach_courante.h"
 struct scoredescr_t const scoredescr_bach_bwv1013_courante = {
-   "Bach BWV 1013 Courante",
-   score_bach_bwv1013_courante,
+   "Bach BWV 1013 Courante", 0, 0,
+   score_bach_bwv1013_courante, sizeof(score_bach_bwv1013_courante),
    NULL /* all coils play all instruments */ };
 
 #include "music\bach_invent13_2instr.h"
@@ -138,8 +141,8 @@ struct coil_instr_t const instruments_bach_invent13_2instr [] = {
    {0, I_Acoustic_Grand }, // coil 0: left hand
    {0xff, 0xff } }; // coil 1: left hand (I_Bright_Acoustic)
 struct scoredescr_t const scoredescr_bach_invent13_2instr = {
-   "Bach 2-part Invention #13",
-   bach_invent13_2instr,
+   "Bach 2-part Invention #13", 0, 0,
+   bach_invent13_2instr, sizeof(bach_invent13_2instr),
    instruments_bach_invent13_2instr };
 
 #include "music\bach_little_fugue_01_2coils.h"
@@ -147,18 +150,36 @@ struct coil_instr_t const instruments_bach_little_fugue [] = {
    {0, I_Viola }, // coil 0 gets viola
    {0xff, 0xff } }; // coil 1 gets everything else, ie violin
 struct scoredescr_t const scoredescr_bach_little_fugue = {
-   "Bach Little Fugue",
-   bach_little_fugue_01_2coils,
+   "Bach Little Fugue", 0, 0,
+   bach_little_fugue_01_2coils, sizeof(bach_little_fugue_01_2coils),
    instruments_bach_little_fugue };
 
-#include "music\mapleaf1.h"
-struct coil_instr_t const instruments_mapleaf1 [] = {
-   {0, I_Acoustic_Grand }, // coil 0: acoustic grand
+#include "music\maple_leaf_rag_CLBNduet.h"
+struct coil_instr_t const instruments_maple_leaf_rag_CLBNduet [] = {
+   {0, I_Bassoon }, // coil 0:
    {0xff, 0xff } }; // coil 1 gets everything else
 struct scoredescr_t const scoredescr_mapleaf_rag = {
-   "Scott Joplin's Mapleleaf Rag",
-   mapleaf1,
-   instruments_mapleaf1 };
+   "Scott Joplin's Mapleleaf Rag", -4, 0,
+   maple_leaf_rag_CLBNduet, sizeof(maple_leaf_rag_CLBNduet),
+   instruments_maple_leaf_rag_CLBNduet };
+
+#include "music\Entertainer.h"
+struct coil_instr_t const instruments_Entertainer [] = {
+   {0, I_Clarinet }, // coil 0:
+   {0xff, 0xff } }; // coil 1 gets everything else
+struct scoredescr_t const scoredescr_Entertainer = {
+   "Scott Joplin's Entertainer", -4, 10,
+   Entertainer, sizeof(Entertainer),
+   instruments_Entertainer };
+
+#include "music\StLouisBlues.h"
+struct coil_instr_t const instruments_StLouisBlues [] = {
+   {0, I_Violin }, // coil 0:
+   {0xff, 0xff } }; // coil 1 gets everything else
+struct scoredescr_t const scoredescr_StLouisBlues = {
+   "WC Handy's St Louis Blues", -8, 40,
+   StLouisBlues, sizeof(StLouisBlues),
+   instruments_StLouisBlues };
 
 #include "music\DuelingCoils.h"
 struct coil_instr_t const instruments_DuelingCoils [] = {
@@ -166,8 +187,8 @@ struct coil_instr_t const instruments_DuelingCoils [] = {
    {1, I_Acoustic_Guitar_steel }, // coil 1 gets "string guitar"
    {0xff, 0xff } }; // coil 1 also gets everything else
 struct scoredescr_t const scoredescr_DuelingCoils = {
-   "Arthur Smith's Dueling Banjos",
-   DuelingCoils,
+   "Arthur Smith's Dueling Banjos", 0, 0,
+   DuelingCoils, sizeof(DuelingCoils),
    instruments_DuelingCoils };
 
 #include "music\moneymoney.h"
@@ -175,20 +196,21 @@ struct coil_instr_t const instruments_moneymoney [] = {
    {0, I_Slap_Bass_2 }, // coil 0: "bright piano"
    {0xff, 0xff } }; // coil 1 gets everything else
 struct scoredescr_t const scoredescr_moneymoney = {
-   "ABBA's Money Money Money",
-   moneymoney,
+   "ABBA's Money Money Money", -4, 0,
+   moneymoney, sizeof (moneymoney),
    instruments_moneymoney };
 
-#include "music\puttritz.h"
-struct coil_instr_t const instruments_puttritz [] = {
-   {0, I_Tenor_Sax },
+#include "music\puttritz_6trk.h"
+struct coil_instr_t const instruments_puttritz_6trk [] = {
+   {0, I_Bassoon },
+   {0, I_Tuba },
    {0, I_Trumpet },
-   {0, I_Xylophone },
-   {0xff, 0xff } }; // coil 1 gets everything else
+   {0, I_Trombone },
+   {1, 0xff } }; // coil 1 gets everything else
 struct scoredescr_t const scoredescr_puttritz = {
-   "Irving Berlin's Puttin' on the Ritz",
-   puttritz,
-   instruments_puttritz };
+   "Irving Berlin's Puttin' on the Ritz", -4, 0,
+   puttritz_6trk, sizeof(puttritz_6trk),
+   instruments_puttritz_6trk };
 
 #include "music\bach_brandenburg3.h"
 struct coil_instr_t const instruments_bach_brandenburg3 [] = {
@@ -196,14 +218,14 @@ struct coil_instr_t const instruments_bach_brandenburg3 [] = {
    {0, I_Contrabass },
    {0xff, 0xff } }; // coil 1 gets everything else
 struct scoredescr_t const scoredescr_bach_brandenburg3 = {
-   "Bach's Brandenburg Concerto #3, 1st mvmt",
-   bach_brandenburg3,
+   "Bach's Brandenburg Concerto #3, 1st mvmt", 0, 0,
+   bach_brandenburg3, sizeof(bach_brandenburg3),
    instruments_bach_brandenburg3 };
 
 struct scoredescr_t const scoredescr_pulse_momentary = { // play a tone while the button is pushed
-   "tone\npush to play", NULL, NULL };
+   "tone\npush to play", 0, 0, NULL, 0, NULL };
 struct scoredescr_t const scoredescr_pulse_hold = { // play a tune continuously until the button is pushed again
-   "tone\npush on/off", NULL, NULL };
+   "tone\npush on/off", 0, 0, NULL, 0, NULL };
 
 const byte PROGMEM score_monophonic_tones [] = { // play monotonic scales
 #define NOTEa(n) 0x90,36+n, 2,0, 0x80, 1,150
@@ -213,8 +235,8 @@ const byte PROGMEM score_monophonic_tones [] = { // play monotonic scales
    NOTEb(0), NOTEb(2), NOTEb(3), NOTEb(5), NOTEb(7), NOTEb(9), NOTEb(11), NOTEb(12),
    0xf0 };
 struct scoredescr_t const scoredescr_monophonic_tones = {
-   "monophonic scales",
-   score_monophonic_tones,
+   "monophonic scales", 0, 0,
+   score_monophonic_tones, sizeof(score_monophonic_tones),
    NULL };
 
 const byte PROGMEM score_polyphonic_tones [] = { // play polyphonic chords
@@ -225,8 +247,8 @@ const byte PROGMEM score_polyphonic_tones [] = { // play polyphonic chords
    0x80, 0x81, 0x82, 0x83, 6, 0,
    0xf0 };
 struct scoredescr_t const scoredescr_polyphonic_tones = {
-   "polyphonic chords",
-   score_polyphonic_tones,
+   "polyphonic chords", 0, 0,
+   score_polyphonic_tones, sizeof(score_polyphonic_tones),
    NULL };
 
 #if TEST_VOLUME
@@ -237,10 +259,10 @@ const byte PROGMEM score_test_volume [] = {  // score for testing volume modulat
    NOTE0(0, 60), NOTE1(1, 100), 2, 0,
    NOTE0(2, 100), NOTE1(3, 127), 2, 0,
    0x81, NOTE0(4, 30), 2, 0,
-   0xf0 }; 
+   0xf0 };
 struct scoredescr_t const scoredescr_test_volume = {
-   "volume test",
-   score_test_volume,
+   "volume test", 0, 0,
+   score_test_volume, sizeif(score_test_volume),
    NULL };
 #endif
 
@@ -248,8 +270,8 @@ const byte PROGMEM score_scope_test [] = { // score for using an oscilloscope to
    0x90, 48, 6, 0, 0x91, 52, 100, 0,
    0x80, 0x81, 0xf0 };
 struct scoredescr_t const scoredescr_scope_test = {
-   "scope test",
-   score_scope_test,
+   "scope test", 0, 0,
+   score_scope_test, sizeof(score_scope_test),
    NULL };
 
 void pulse_momentary(struct scoredescr_t const *);
@@ -272,6 +294,8 @@ actions[] = { // this is the order they appear as the knob is turned
    {play_score, &scoredescr_bach_invent13_2instr },
    {play_score, &scoredescr_bach_little_fugue },
    {play_score, &scoredescr_mapleaf_rag },
+   {play_score, &scoredescr_Entertainer },
+   {play_score, &scoredescr_StLouisBlues },
    {play_score, &scoredescr_DuelingCoils },
    {play_score, &scoredescr_moneymoney },
    {play_score, &scoredescr_puttritz },
@@ -285,12 +309,14 @@ actions[] = { // this is the order they appear as the knob is turned
 #define NUM_INSTRUMENTS 128      // number of MIDI instruments
 #define MAX_PULSEWIDTH_USEC 350  // maximum pulse width in usec (for tests, not for music-playing)
 #define MIN_PULSEWIDTH_USEC 5    // minimum pulse width in usec (for tests, not for music-playing)
+#define MAX_DUTYCYCLE_PCT 5      // maximum duty cycle in percent (for tests, not for music-playing)
 #define MIN_VOLUME 50            // minimum MIDI volume we pin to; below this is all the same
 #define MAX_VOLUME 127           // maximum MIDI volume we pin to; above this is all the same
 #define MAX_FREQUENCY 2000       // maximum pulse frequency for pulse testing
-#define MAX_MIDI_NOTE 108        // limit frequency to about 4.1 Khz, the highest piano note
+#define MAX_MIDI_NOTE 96         // limit frequency to about 2 Khz, the highest piano note less one octave
 #define MIN_PULSE_SEPARATION 10  // usec
-#define SUMMATION_MSEC 10        // how long for overlapping duty cycle period calculation
+#define SUMMATION_MSEC 25        // how long for overlapping duty cycle period calculation
+#define DISPLAY_UPDATE_MSEC 250  // how often to update the music-playing display
 #define DEBOUNCE_DELAY 10        // msec for debounce delay
 #define POT_CHANGE_THRESHOLD 10  // fuzz magnitude for analog pots (about 1%)
 
@@ -321,17 +347,20 @@ struct { // limits for each Tesla coil
    const unsigned min_pulsewidth, max_pulsewidth; // in usec
    const unsigned max_dutycycle_pct; // in percent
 } coil_limit[NUM_COILS] = {
-   {5, 300, 10 }, // my 30" coil: pretty rugged
-   {3, 200, 5 }   // the 12" OneTesla coil: more fragile
+   {10, 250, 10 }, // my 30" coil: pretty rugged
+   {5, 150, 5 }   // the 12" OneTesla coil: more fragile
 };
 
 struct { // state information about our Tesla coils
-   volatile bool doing_pulse;
-   unsigned int current_max_pulsewidth; // usec, based on the setting of the volume pot and this coil's limits
-   volatile unsigned long time_last_pulse_ended; // micros() timestamp, which overflow in 70 minutes
-   unsigned int pulse_sum1_usec, pulse_sum2_usec;  // overlapping period pulse summations for duty cycle calculation
-   bool duty_cycle_exceeded;     // was the duty cycle exceeded in the last summation period?
-   uint32_t instruments[NUM_INSTRUMENTS / 32];   // bit vector of what instruments we play
+   volatile bool doing_pulse;                     // is it currently doing a pulse
+   unsigned int current_max_pulsewidth;           // width in usec, based on the volume pot and this coil's limits
+   volatile unsigned long time_last_pulse_ended;  // micros() timestamp, which overflow in 70 minutes
+   volatile unsigned int pulse_sum1_usec, pulse_sum2_usec; // overlapping period pulse summations for duty cycle calculation
+   unsigned int active_usec;                      // how many usec pulses were active since the last display
+   int last_barheight;                            // the last height, in pixels, of the activity bar
+   bool duty_cycle_exceeded;                      // was the duty cycle exceeded in the last summation period?
+   bool show_duty_cycle_exceeded;                 // is it to be noted on the display
+   uint32_t instruments[NUM_INSTRUMENTS / 32];    // bit vector of what instruments we play
 } tesla_coil[NUM_COILS] = {0 };
 
 // state information about our channels, which are the note-playing timers
@@ -397,7 +426,7 @@ void assert(bool test, int code) {
 
 // display a string on multiple text lines, keeping words intact where possible,
 // and accepting \n to force a new line
-void display_words(const char *msg, int xloc, int yloc) {
+void display_words(const char *msg, int xloc, int yloc /*bottom*/ ) {
    int dspwidth = display.getDisplayWidth(); // display width in pixels
    int strwidth = 0;  // string width in pixels
    char glyph[2]; glyph[1] = 0;
@@ -525,17 +554,17 @@ void start_oneshot(byte coil, unsigned int usec) { // generate an active-low pul
       FTM0_C5SC &= ~FTM_CSC_CHF; // reset any pending channel flag
       FTM0_C5SC = FTM_CSC_MSA | FTM_CSC_ELSB | FTM_CSC_ELSA | FTM_CSC_CHIE; // set output on match, and interrupt
       FTM0_OUTMASK &= ~FTM_OUTMASK_CH5OM; } // enable output to cause it to go low
-   else if (coil == 1) {
+   else if (NUM_COILS >= 2 && coil == 1) {
       FTM0_C6V = count_target;
       FTM0_C6SC &= ~FTM_CSC_CHF; // reset any pending channel flag
       FTM0_C6SC = FTM_CSC_MSA | FTM_CSC_ELSB | FTM_CSC_ELSA | FTM_CSC_CHIE; // set output on match, and interrupt
       FTM0_OUTMASK &= ~FTM_OUTMASK_CH6OM; }// enable output to cause it to go low
-   else if (coil == 2) {
+   else if (NUM_COILS >= 3 && coil == 2) {
       FTM0_C0V = count_target;
       FTM0_C0SC &= ~FTM_CSC_CHF; // reset any pending channel flag
       FTM0_C0SC = FTM_CSC_MSA | FTM_CSC_ELSB | FTM_CSC_ELSA | FTM_CSC_CHIE; // set output on match, and interrupt
       FTM0_OUTMASK &= ~FTM_OUTMASK_CH0OM; } // enable output to cause it to go low
-   else if (coil == 3) {
+   else if (NUM_COILS >= 4 && coil == 3) {
       FTM0_C1V = count_target;
       FTM0_C1SC &= ~FTM_CSC_CHF; // reset any pending channel flag
       FTM0_C1SC = FTM_CSC_MSA | FTM_CSC_ELSB | FTM_CSC_ELSA | FTM_CSC_CHIE; // set output on match, and interrupt
@@ -580,8 +609,18 @@ bool rotary_switch () { // constrained to the size of the action table
          rotary_value = NUM_ACTIONS + rotary_value;
       rotary_change = 0;
       interrupts();
+      //debug_print("rotary changed to %d\n", rotary_value);
       return true; }
    return false; }
+
+void show_rotary_name(void) {
+   assert(rotary_value >= 0 && rotary_value < NUM_ACTIONS, 2);
+   display.clearBuffer(); // display the associated text
+   char number[5];
+   sprintf(number, "%d: ", rotary_value + 1);
+   int numberwidth = display.drawStr(0, display.getMaxCharHeight(), number);
+   display_words(actions[rotary_value].descr->name, numberwidth, display.getMaxCharHeight());
+   display.sendBuffer(); }
 
 bool pot_changed (int pot) {  // Check if a pot has changed
    int newval = analogRead(pot_ports[pot]);
@@ -614,11 +653,12 @@ int get_pot_frequency(int pot) { // return frequency in hertz: 1 to MAX_FREQUENC
    pot_changed(pot);
    return (pot_values[pot] * (MAX_FREQUENCY - 1) / 1023) + 1; }
 
-int pushbutton () {  // read debounced pushbutton, return true if pushed
-   int current = digitalRead (PushButton);
+bool pushbutton(void) {  // read debounced pushbutton, return true if pushed
+   int current = digitalRead(PushButton);
    if (current != pushbutton_value) {
       delay (DEBOUNCE_DELAY);
-      pushbutton_value = digitalRead (PushButton); }
+      pushbutton_value = digitalRead(PushButton);
+      debug_print("button changed to %d\n", pushbutton_value); }
    return pushbutton_value == 0; }
 
 bool check_coil_switch(int coil) { // see if a coil selector switch has changed
@@ -635,8 +675,8 @@ bool check_coil_switches(void) { // see if any coil selector switch has changed
       changed |= check_coil_switch(coil);
    return changed; }
 
-// Do instrument assignments to Tesla coils.  We allow coils to play multiple instruments,
-// and allow instruments to be played on multiple coils.
+// Do instrument assignments to Tesla coils when a song starts, and any time the coil switches change.
+// We allow coils to play multiple instruments, and allow instruments to be played on multiple coils.
 
 void reset_coils(void) {
    memset(tesla_coil, 0, sizeof(tesla_coil)); }
@@ -645,18 +685,23 @@ void reset_coils(void) {
 #define test_coil_instrument(coil,instr) (tesla_coil[coil].instruments[instr/32] & (1 << (instr%32)))
 
 void set_coil_instruments(struct coil_instr_t const *assignments) { // assign coils to instruments for a score
-   reset_coils(); // start with nothing assigned
+   reset_coils(); // start with nothing assigned and all state information cleared
    check_coil_switches(); // update coil switch status
    if (assignments) {
-      while (assignments->coilnum != 0xff) { // do the assignments
+      while (assignments->coilnum != 0xff && assignments->instrument != 0xff) { // do the assignments
          if (coil_on[assignments->coilnum]) // if this coil's switch is on
             set_coil_instrument(assignments->coilnum, assignments->instrument);
          ++assignments; }
-      // Give the last coil whose switch is on all instruments not played by any other coil
-      int last_coil = -1;
-      for (int coil = 0; coil < NUM_COILS; ++coil) // find the last coil which is on
-         if (coil_on[coil]) last_coil = coil;
-      if (last_coil >= 0) { // if there is at least one coil playing
+      // Give all instruments not played by any other coil to the coil named with the 0xff instrument,
+      // or, if it isn't playing or wasn't assigned, to the last coil
+      int catchall_coil;
+      if (assignments->coilnum != 0xff && coil_on[assignments->coilnum])
+         catchall_coil = assignments->coilnum;
+      else { // find the last coil that is playing
+         catchall_coil = -1;
+         for (int coil = 0; coil < NUM_COILS; ++coil)
+            if (coil_on[coil]) catchall_coil = coil; }
+      if (catchall_coil >= 0) { // if there is at least one coil playing
          uint32_t instruments_assigned[NUM_INSTRUMENTS / 32];
          for (int map = 0; map < NUM_INSTRUMENTS / 32; ++map)
             instruments_assigned[map] = 0;
@@ -664,7 +709,7 @@ void set_coil_instruments(struct coil_instr_t const *assignments) { // assign co
             for (int map = 0; map < NUM_INSTRUMENTS / 32; ++map)
                instruments_assigned[map] |= tesla_coil[coil].instruments[map];
          for (int map = 0; map < NUM_INSTRUMENTS / 32; ++map) // give the last coil any not assigned
-            tesla_coil[last_coil].instruments[map] |= ~instruments_assigned[map]; } }
+            tesla_coil[catchall_coil].instruments[map] |= ~instruments_assigned[map]; } }
    else // no assignments: play all instruments on all coils whose switches are on
       for (int coil = 0; coil < NUM_COILS; ++coil)
          if (coil_on[coil])
@@ -699,9 +744,9 @@ void set_all_channel_pulsewidths(void) {
       set_channel_pulsewidth(chan, channel_volume[chan]); }
 #endif
 
-// Update duty cycle caculations for the coils, using two overlapping measurement period,
-// each of length 2 * SUMMATION_MSEC.
-// When pulses are generated, both sums are incremented by the pulse width
+// Update duty cycle caculations for the coils, using two overlapping
+// measurement periods, each of length 2 * SUMMATION_MSEC.
+// When pulses are generated, both sums are incremented by the pulse width.
 
 void duty_cycle_calcs(void) {
    static unsigned long last_calc_time = 0;
@@ -716,14 +761,17 @@ void duty_cycle_calcs(void) {
             tesla_coil[coil].duty_cycle_exceeded =
                (tesla_coil[coil].pulse_sum1_usec * 100) / (2 * SUMMATION_MSEC * 1000)
                > coil_limit[coil].max_dutycycle_pct;
+            if (tesla_coil[coil].duty_cycle_exceeded) tesla_coil[coil].show_duty_cycle_exceeded = true;
             #if DEBUG
             if (tesla_coil[coil].duty_cycle_exceeded)
-               debug_print("coil %d duty cycle %d%% > %d%%\n", coil,
+               debug_print("%lu coil %d duty cycle %d%% > %d%%\n", millis(), coil,
                            (tesla_coil[coil].pulse_sum1_usec * 100) / (2 * SUMMATION_MSEC * 1000),
                            coil_limit[coil].max_dutycycle_pct);
             else if (oldval)
-               debug_print("coil %d duty cycle recovered\n", coil);
+               debug_print("%lu coil %d duty cycle recovered\n", millis(), coil);
             #endif
+            tesla_coil[coil].active_usec += tesla_coil[coil].pulse_sum1_usec;
+            //debug_print("coil %d sum1=0\n", coil);
             tesla_coil[coil].pulse_sum1_usec = 0; }
          else { // doing sum2
             tesla_coil[coil].duty_cycle_exceeded =
@@ -731,24 +779,85 @@ void duty_cycle_calcs(void) {
                > coil_limit[coil].max_dutycycle_pct;
             #if DEBUG
             if (tesla_coil[coil].duty_cycle_exceeded)
-               debug_print("coil %d duty cycle %d%% > %d%%\n", coil,
+               debug_print("%lu coil %d duty cycle %d%% > %d%%\n", millis(), coil,
                            (tesla_coil[coil].pulse_sum2_usec * 100) / (2 * SUMMATION_MSEC * 1000),
                            coil_limit[coil].max_dutycycle_pct);
             else if (oldval)
-               debug_print("coil %d duty cycle recovered\n", coil);
+               debug_print("%lu coil %d duty cycle recovered\n", millis(), coil);
             #endif
+            tesla_coil[coil].active_usec += tesla_coil[coil].pulse_sum1_usec;
+            //debug_print("coil %d sum2=0\n", coil);
             tesla_coil[coil].pulse_sum2_usec = 0; }
-         doing_sum1 = 1 - doing_sum1; } // switch to other summation interval
+         if (tesla_coil[coil].duty_cycle_exceeded) tesla_coil[coil].show_duty_cycle_exceeded = true; }
+      doing_sum1 = 1 - doing_sum1;  // switch to other summation interval
       last_calc_time = timenow; } }
+
+static const struct scoredescr_t *current_scoredescr;
+void update_playing_status (void) {
+   duty_cycle_calcs();
+   static unsigned long last_display_time = 0;
+   unsigned long timenow = millis();
+   if (timenow - last_display_time >= DISPLAY_UPDATE_MSEC) { // time for a display update
+      // -the top line is text: start of description
+      // -then a horizonal progress bar graph showing how much of the song is done
+      // -then a text line reserved for duty cycle overload warnings
+      // -the rest is space for vertical activity bar graphs showing recent duty cycle relative to maximum
+      //
+      // The following are pseudo-constants: we don't know them at compile time, but we do after initialization.
+      // (We could make them global variables, but we don't compute them very often.)
+      int DSP_PROGBAR_TOP = display.getMaxCharHeight() + 4; // top of the progress bar is a little under the title text line
+      int DSP_PROGBAR_HT = 3;  // how many pixels high is the progress bar
+      int DSP_WARN_TEXT_BOT = DSP_PROGBAR_TOP + DSP_PROGBAR_HT + display.getMaxCharHeight() + 1; // bottom of the warning text line
+      int DSP_ACTBAR_BOT = display.getDisplayHeight();  // base of the activity bars
+      int DSP_ACTBAR_HEIGHT = DSP_ACTBAR_BOT - DSP_WARN_TEXT_BOT - 1; // max height of the activity bar
+      int DSP_ACTBAR_WIDTH = display.getMaxCharWidth() * 2; // width of the activity bar
+      // draw the progress bar
+      extern const byte *score_cursor; // where Playtune is up to
+      int percent = 100 * (score_cursor - current_scoredescr->scoreptr) / current_scoredescr->scoresize;
+      if (percent < 0) percent = 0;
+      if (percent > 100) percent = 100;
+      display.drawBox(0, DSP_PROGBAR_TOP, // origin for boxes is the upper left corner, unlike for text!
+                      display.getDisplayWidth()*percent / 100, DSP_PROGBAR_HT);
+      // now draw the activity bars and the warning text line snippets for each coil
+      display_clearline(DSP_WARN_TEXT_BOT);
+      display.drawHLine(0, DSP_WARN_TEXT_BOT + 1, display.getDisplayWidth()); // target line at top of activity bars
+      for (int coil = 0; coil < NUM_COILS; ++coil) {
+         int xloc = coil * display.getMaxCharWidth() * 4; // left edge of 4 chars per coil
+         display.drawStr(xloc, DSP_WARN_TEXT_BOT, tesla_coil[coil].show_duty_cycle_exceeded ? "OVL" : "    ");
+         tesla_coil[coil].show_duty_cycle_exceeded = false;
+         // height = maxheight * (active_usec/(UPDATE_MSEC*1000)) / (maxDC%/100)
+         int barheight = DSP_ACTBAR_HEIGHT * tesla_coil[coil].active_usec  / (10 * DISPLAY_UPDATE_MSEC * coil_limit[coil].max_dutycycle_pct);
+         //debug_print("%d usec %d height %d lastheight %d\n", coil, tesla_coil[coil].active_usec, barheight, tesla_coil[coil].last_barheight);
+         if (barheight > DSP_ACTBAR_HEIGHT) barheight = DSP_ACTBAR_HEIGHT;
+         int deltaheight = barheight - tesla_coil[coil].last_barheight;
+         xloc += display.getMaxCharWidth();  // space out to the middle 2 of the 4 characters
+         if (deltaheight > 0) {  // bar is growing: draw the new part
+            //debug_print("%d grow at %d by %d\n", coil, DSP_ACTBAR_BOT - barheight, deltaheight);
+            display.drawBox(xloc, DSP_ACTBAR_BOT - barheight, DSP_ACTBAR_WIDTH, deltaheight); }
+         else if (deltaheight < 0) { // bar is shrinking: erase the old part
+            //debug_print("%d shrink at %d by %d\n", coil, DSP_ACTBAR_BOT - tesla_coil[coil].last_barheight, - deltaheight);
+            display.setDrawColor(0); // "erase"
+            display.drawBox(xloc, DSP_ACTBAR_BOT - tesla_coil[coil].last_barheight, DSP_ACTBAR_WIDTH, - deltaheight);
+            display.setDrawColor(1); } // "draw"
+         //else debug_print("%d unchanged at %d\n", coil, DSP_ACTBAR_BOT - barheight);
+         tesla_coil[coil].active_usec = 0;
+         tesla_coil[coil].last_barheight = barheight; }
+      display.sendBuffer();
+      last_display_time = timenow; } }
 
 // play a complete score
 
+void reset_display(struct scoredescr_t const *descr) {
+   display.clearBuffer();
+   display.drawStr(0, display.getMaxCharHeight(), descr->name); } // as much as fits on the first line
+
 void play_score (struct scoredescr_t const *descr) {
    digitalWrite(RedLED, HIGH);
+   current_scoredescr = descr;
    pot_changed(POT0);
    unsigned notechange_initval = pot_values[POT0]; // initial note transposition point for score
-   notechange = 0;
-   set_coil_instruments(descr->assignments); // do the instrument assignments
+   notechange = descr->transpose;
+   set_coil_instruments(descr->assignments); // do the initial instrument assignments
    for (int chan = 0; chan < NUM_CHANS; ++chan) {
       channel_volume[chan] = 127; // set all channels to max volume
       teslacoil_change_instrument(chan, 0); } // and instrument 0
@@ -758,25 +867,30 @@ void play_score (struct scoredescr_t const *descr) {
    pulse_separation = get_pot_pulse_separation(POT2);
    pot_changed(POT3); // initial speed point for the score
    unsigned speed_initval = pot_values[POT3];
-   tune_speed(100); // speed is 100% (normal) based on that pot position
    tune_playscore(descr->scoreptr);   // start playing
-   while (pushbutton()) duty_cycle_calcs(); // wait for button release
+   tune_speed(100 + descr->speed); // speed is 100% (normal) based on that pot position, tweaked by score description
+   reset_display(descr);
+   display.clearBuffer();
+   display.drawStr(0, display.getMaxCharHeight(), descr->name); // as much as fits on the first line
+   while (pushbutton()) update_playing_status(); // wait for button release
    while (!pushbutton() && rotary_change == 0 // wait for next button push, or rotary switch change,
           && tune_playing) { // or for tune to stop
-      duty_cycle_calcs();
+      update_playing_status();
       if (check_coil_switches()) { // check for coil switch changes
          set_coil_instruments(descr->assignments); // if so, redo instruments assignments to coils
          for (int chan = 0; chan < NUM_CHANS; ++chan) // and recompute channel_coils[]
-            teslacoil_change_instrument(chan, channel_instrument[chan] ); }
+            teslacoil_change_instrument(chan, channel_instrument[chan] );
+         set_coil_maxpulsewidths(POT1);
+         reset_display(descr); }
       if (pot_changed(POT0)) {  // check for changed note transposition
-         notechange = scale_pot(POT0, "notechange", -12, 12, 0, notechange_initval); } // +- one octave
+         notechange = scale_pot(POT0, "notechange", -12, 12, descr->transpose, notechange_initval); } // +- one octave
       pot_changed(POT1); // update volume pot
       if (pot_changed(POT1)) { // check for changed volume
          set_coil_maxpulsewidths(POT1); }
       if (pot_changed(POT2)) { // check for changed min pulse separation
          pulse_separation = get_pot_pulse_separation(POT2); }
       if (pot_changed(POT3)) {  // check for changed speed
-         tune_speed(scale_pot(POT3, "speed", 50, 200, 100, speed_initval)); } } // 1/2x to 2x
+         tune_speed(scale_pot(POT3, "speed", 50, 200, 100 + descr->speed, speed_initval)); } } // 1/2x to 2x
    if (tune_playing) tune_stopscore();
    digitalWrite(RedLED, LOW);
    while (pushbutton());  // wait for button release
@@ -860,13 +974,14 @@ void do_one_pulse (void) { // do one pulse and pause for an inter-pulse delay
          if (dutycycle > coil_limit[coil].max_dutycycle_pct) break;
       bool dutycycle_ok = coil == NUM_COILS;
       char buf[50];
-      sprintf(buf, "%u usec, %u%%", pulsewidth, dutycycle);
+      sprintf(buf, "%u us, %u Hz", pulsewidth, 1000000 / (pulsewidth + delayusec));
       int yloc = display.getDisplayHeight() - 1 - display.getMaxCharHeight(); // second from bottom line
       display_clearline(yloc); // clear it first, to allow for transparent fonts
       display.drawStr(0, yloc, buf);  // then write the new line
       yloc = display.getDisplayHeight() - 1; // bottom line
       display_clearline(yloc); // clear it first, to allow for transparent fonts
-      if (!dutycycle_ok) display.drawStr(0, display.getDisplayHeight() - 1, "EXCEEDS " STRING(MAX_DUTYCYCLE_PCT) "% !!!");
+      sprintf(buf, "%u%% %s", dutycycle, dutycycle_ok ? "" : "> " STRING(MAX_DUTYCYCLE_PCT) "% !!");
+      display.drawStr(0, display.getDisplayHeight() - 1, buf);
       display.sendBuffer();
       onepulse_pulsewidth = pulsewidth;
       onepulse_delayusec = delayusec;
@@ -905,13 +1020,7 @@ void pulse_hold(struct scoredescr_t const * descr) {
 
 void loop () {
    if (rotary_switch()) { // if rotary switch changed
-      assert(rotary_value >= 0 && rotary_value < NUM_ACTIONS, 2);
-      display.clearBuffer(); // display the associated text
-      char number[5];
-      sprintf(number, "%d: ", rotary_value + 1);
-      int numberwidth = display.drawStr(0, display.getMaxCharHeight(), number);
-      display_words(actions[rotary_value].descr->name, numberwidth, display.getMaxCharHeight());
-      display.sendBuffer(); }
+      show_rotary_name(); }
    if (pushbutton()) {  // if button is pushed,
       pot_changed(0);   // first read all the parameter pots
       pot_changed(1);
@@ -919,5 +1028,6 @@ void loop () {
       pot_changed(3);
       // then execute the action routine based on the switch position
       assert(rotary_value >= 0 && rotary_value < NUM_ACTIONS, 3);
-      (actions[rotary_value].rtn)(actions[rotary_value].descr); } }
+      (actions[rotary_value].rtn)(actions[rotary_value].descr);
+      show_rotary_name(); } }
 //*

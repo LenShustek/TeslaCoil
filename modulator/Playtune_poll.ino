@@ -325,7 +325,7 @@ static boolean timer_running = false;
 static boolean volume_present = ASSUME_VOLUME;
 
 static const byte *score_start = 0;
-static const byte *score_cursor = 0;
+const byte *score_cursor = 0; // public so callers can monitor how far along we are
 static unsigned _tune_speed = 100;
 
 static unsigned /*short*/ int scorewait_interrupt_count;
@@ -560,18 +560,18 @@ void tune_init_pins(void) {
    digitalWrite(SCOPE_PIN, 0);
    #endif
 
-#if TESLA_COIL
+   #if TESLA_COIL
 #define tune_initchan(pin) \
- if (num_chans < MAX_CHANS) \
-   ++num_chans;
-#else
+   if (num_chans < MAX_CHANS) \
+      ++num_chans;
+   #else
 #define tune_initchan(pin)   \
    if (num_chans < MAX_CHANS) {  \
       pins[num_chans] = pin; \
       pinMode(pin, OUTPUT);  \
       ++num_chans;  \
    }
-#endif
+   #endif
    #ifndef CHAN_0_PIN
 #define CHAN_0_PIN 0
 #define CHAN_0_REG B
