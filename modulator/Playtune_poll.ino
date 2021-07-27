@@ -123,10 +123,6 @@
    increase MAX_CHANS up to 16. There is some inefficiency if MAX_CHANS is much
    larger than the number of channels actually being used.
 
-   We also use the TimerOne library files, which you can get at
-   http://playground.arduino.cc/Code/Timer1 and put into your Arduino library
-   directory, or just put in the directory with the other files.
-
    There are five public functions and one public variable that you can use
    in your runtime code in Playtune_poll_test.ino.
 
@@ -280,12 +276,13 @@
    23 April 2021, Len Shustek
       - Create TESLA_COIL version that only works for Teensy
       - Add tune_speed()
+   21 June 2021, Len Shustek
+      - swtich from TimerOne.h to IntervalTimer, which allos 4 objects
 */
 
 #define TESLA_COIL 1        // special version for Tesla coils? 
 
 #include <Arduino.h>
-#include <TimerOne.h>
 #include "Playtune_poll.h"  // this contains, among other things, the output pin definitions
 
 #define DO_VOLUME 1         // generate volume-modulating code? Needs -v on Miditones.
@@ -498,6 +495,7 @@ static uint16_t drum_cap[128]; // values may be larger in this actual table used
 void tune_stopnote (byte chan);
 void tune_stepscore (void);
 void timer_ISR(void);
+IntervalTimer playtune_timer;
 
 //------------------------------------------------------------------------------
 // Initialize and start the timer
@@ -544,8 +542,7 @@ void tune_start_timer(int polltime) {
       drum_ticks[index] = ((uint32_t)pgm_read_byte(min_drum_ticks_PGM + index) * MAX_POLLTIME_USEC) / polltime;
       drum_cap[index] = ((uint32_t)pgm_read_word(min_drum_cap_PGM + index) * MAX_POLLTIME_USEC) / polltime; }
    #endif
-   Timer1.initialize(polltime); // start the timer
-   Timer1.attachInterrupt(timer_ISR);
+   playtune_timer.begin(timer_ISR, polltime); // start the timer
    timer_running = true; }
 
 //------------------------------------------------------------------------------
@@ -933,8 +930,7 @@ void tune_stopscore (void) {
 
 void tune_stop_timer(void) {
    tune_stopscore();
-   Timer1.stop();
-   Timer1.detachInterrupt();
+   playtune_timer.end(); 
    timer_running = false; }
 
 //------------------------------------------------------------------------------

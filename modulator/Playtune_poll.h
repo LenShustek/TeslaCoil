@@ -7,7 +7,7 @@
 // you want to play simultaneously. This can be up to 16, but it's best for efficiency to not make
 // it much bigger than what you will actually be using for the most complicated song.
 
-#define MAX_CHANS 16     // maximum number of simultaneous notes
+#define MAX_CHANS 8     // maximum number of simultaneous notes
 
 // Next, choose which set of pins in this file you want to use. This should match the processor 
 // chosen in the tools/board menu of the Arduino IDE (Integrated Development Environment).
@@ -156,7 +156,7 @@
 // If you want to use an oscillocope to measure how long our interrupt routine
 // takes, you can configure a pin that outputs a high when it is running.
 
-#define SCOPE_TEST true // make scope measurements?
+#define SCOPE_TEST false // make scope measurements?
 #ifdef CORE_TEENSY
 #define SCOPE_PIN 13     // board pin
 #endif

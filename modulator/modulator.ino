@@ -3,8 +3,8 @@
    Tesla coil modulator
    By Len Shustek
 
-   The purpose of the modulator is to produce binary pulses that
-   turn Tesla coils on and off to produce polyphonic music.
+   The purpose of the modulator is to produce binary pulses that turn
+   up to four Tesla coils on and off to produce polyphonic music.
 
    The only thing a Telsa coil can do is create an arc with a pulse that lasts no longer
    than about 500 microseconds. To sound a note, we generate pulses at the frequency of the
@@ -41,12 +41,12 @@
      -four "Tesla coil on" toggle switches
 
    The parameter knobs are used as follows:
-     1: for music, pitch change from the default; start music with the knob centered
-        for test pulse generation, the frequency from 1 Hz to 2 kHz
-     2: for music, the overall volume, which controls how note volume becomes pulse width
-        for test pulse generation, the pulse width from 5 to 350 usec
-     3: for music, the required separation between pulses, from 10 to 2000 usec
-     4: for music, tempo change from the default; start music with the knob centered
+     1: -for music, pitch change from the default; start music with the knob centered
+        -for test pulse generation, sets the frequency from 1 Hz to 2 kHz
+     2: -for music, the overall volume, which controls how note volume becomes pulse width
+        -for test pulse generation, sets the pulse width from 5 to 350 usec
+     3: -for music, sets the minimum separation between pulses, from 10 to 2000 usec
+     4: -for music, changes the tempo from the default; start music with the knob centered
 
    The insides of the modulator box has the following:
      Teensy 3.2 Cortex M4 processor board with 256 KB flash,
@@ -77,6 +77,13 @@
     -implement per-coil limits on pulse width and duty cycle, because
      some coils (like OneTelsa) blow up sooner than others (like mine).
     -increase max channels from 8 to 16
+   6/2/2021, L. Shustek
+    - Go back to 8 channels, and use music with only 2 max simultaneous notes per coil.
+      That both improves sonic clarity and reduces the risk of blowing stuff up.
+   6/21/2021, L. Shustek
+    - use IntervalTimer to do pulse_momentary and pulse_hold, so updating the display
+      doesn't cause a pause
+
    ------------------------------------------------------------------------------------
    The MIT License (MIT)
    Copyright (c) 2011, 2015, 2021 Len Shustek
@@ -100,8 +107,9 @@
    DEALINGS IN THE SOFTWARE.
 **************************************************************************************/
 #define VERSION "5.1"
-#define DEBUG 0
-#define TEST_VOLUME 0
+#define DEBUG false
+#define TEST_VOLUME false
+#define SCOPE_TEST false
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -116,10 +124,10 @@ struct coil_instr_t {  // an assignment of a coil to an instrument
    const byte instrument; };
 struct scoredescr_t {  // a score description
    const char *name;       // ptr to the name
-   const int transpose;    // how many half-notes to transpose by, up or down
-   const int speed;        // initial speed tweak
+   const int transpose;    // initial transposition, in half-notes up or down
+   const int speed;        // initial speed tweak, in percent (20 = 120%)
    const byte *scoreptr;   // ptr to the score
-   const int scoresize;    // how long it is
+   const int scoresize;    // how long it is in bytes
    const struct coil_instr_t *assignments; }; // ptr to array of instrument assignments, or NULLP
 
 #if 0 // boring!
@@ -191,36 +199,38 @@ struct scoredescr_t const scoredescr_DuelingCoils = {
    DuelingCoils, sizeof(DuelingCoils),
    instruments_DuelingCoils };
 
-#include "music\moneymoney.h"
-struct coil_instr_t const instruments_moneymoney [] = {
-   {0, I_Slap_Bass_2 }, // coil 0: "bright piano"
+#include "music\money_2coils.h"
+struct coil_instr_t const instruments_money_2coils [] = {
+   {0, I_Bright_Acoustic }, // coil 0: "bright piano"
    {0xff, 0xff } }; // coil 1 gets everything else
-struct scoredescr_t const scoredescr_moneymoney = {
-   "ABBA's Money Money Money", -4, 0,
-   moneymoney, sizeof (moneymoney),
-   instruments_moneymoney };
+struct scoredescr_t const scoredescr_money_2coils = {
+   "ABBA's Money Money Money", 0, 0,
+   money_2coils, sizeof (money_2coils),
+   instruments_money_2coils };
 
-#include "music\puttritz_6trk.h"
-struct coil_instr_t const instruments_puttritz_6trk [] = {
+#include "music\puttritz_4chan.h"
+struct coil_instr_t const instruments_puttritz_4chan [] = {
    {0, I_Bassoon },
    {0, I_Tuba },
    {0, I_Trumpet },
    {0, I_Trombone },
    {1, 0xff } }; // coil 1 gets everything else
 struct scoredescr_t const scoredescr_puttritz = {
-   "Irving Berlin's Puttin' on the Ritz", -4, 0,
-   puttritz_6trk, sizeof(puttritz_6trk),
-   instruments_puttritz_6trk };
+   "Irving Berlin's Puttin' on the Ritz", -12, 0,
+   puttritz_4chan, sizeof(puttritz_4chan),
+   instruments_puttritz_4chan };
 
+#if 0 // too long
 #include "music\bach_brandenburg3.h"
 struct coil_instr_t const instruments_bach_brandenburg3 [] = {
    {0, I_Cello }, // coil 0 gets low: cello and contrabase
    {0, I_Contrabass },
    {0xff, 0xff } }; // coil 1 gets everything else
 struct scoredescr_t const scoredescr_bach_brandenburg3 = {
-   "Bach's Brandenburg Concerto #3, 1st mvmt", 0, 0,
+   "Bach's Brandenburg Concerto #3, 1st mvmt", -4, 0,
    bach_brandenburg3, sizeof(bach_brandenburg3),
    instruments_bach_brandenburg3 };
+#endif
 
 struct scoredescr_t const scoredescr_pulse_momentary = { // play a tone while the button is pushed
    "tone\npush to play", 0, 0, NULL, 0, NULL };
@@ -266,13 +276,17 @@ struct scoredescr_t const scoredescr_test_volume = {
    NULL };
 #endif
 
+#if SCOPE_TEST
 const byte PROGMEM score_scope_test [] = { // score for using an oscilloscope to test timing
-   0x90, 48, 6, 0, 0x91, 52, 100, 0,
-   0x80, 0x81, 0xf0 };
+   0x90, 48, 7, 208, /* 130.81 Hz alone for 2 seconds */
+   0x90, 84, 7, 208, /* 1046.5 Hz alone for 2 seconds */
+   0x91, 48, 7, 208, /* both for 2 seconds */
+   0x80, 0x81, 3, 232, 0xe0 }; /* silence for 1 second, then repeat */
 struct scoredescr_t const scoredescr_scope_test = {
    "scope test", 0, 0,
    score_scope_test, sizeof(score_scope_test),
    NULL };
+#endif
 
 void pulse_momentary(struct scoredescr_t const *);
 void pulse_hold(struct scoredescr_t const *);
@@ -284,6 +298,9 @@ struct action_t {  // table of pushbutton action routines
 actions[] = { // this is the order they appear as the knob is turned
    #if TEST_VOLUME
    {play_score, &scoredescr_test_volume },
+   #endif
+   #if SCOPE_TEST
+   {play_score, &scoredescr_scope_test },
    #endif
    {pulse_momentary, &scoredescr_pulse_momentary },
    {pulse_hold, &scoredescr_pulse_hold },
@@ -297,15 +314,14 @@ actions[] = { // this is the order they appear as the knob is turned
    {play_score, &scoredescr_Entertainer },
    {play_score, &scoredescr_StLouisBlues },
    {play_score, &scoredescr_DuelingCoils },
-   {play_score, &scoredescr_moneymoney },
-   {play_score, &scoredescr_puttritz },
-   {play_score, &scoredescr_bach_brandenburg3 } };
+   {play_score, &scoredescr_money_2coils },
+   {play_score, &scoredescr_puttritz } };
 #define NUM_ACTIONS ((int)(sizeof(actions)/sizeof(struct action_t)))
 
 // parameters and hardware configuration
 
 #define NUM_COILS 2              // number of Tesla coils
-#define NUM_CHANS 16             // number of music channels == max number of simultaneous notes
+#define NUM_CHANS 8              // number of music channels == max number of simultaneous notes (also in Playtune_poll.h)
 #define NUM_INSTRUMENTS 128      // number of MIDI instruments
 #define MAX_PULSEWIDTH_USEC 350  // maximum pulse width in usec (for tests, not for music-playing)
 #define MIN_PULSEWIDTH_USEC 5    // minimum pulse width in usec (for tests, not for music-playing)
@@ -314,11 +330,11 @@ actions[] = { // this is the order they appear as the knob is turned
 #define MAX_VOLUME 127           // maximum MIDI volume we pin to; above this is all the same
 #define MAX_FREQUENCY 2000       // maximum pulse frequency for pulse testing
 #define MAX_MIDI_NOTE 96         // limit frequency to about 2 Khz, the highest piano note less one octave
-#define MIN_PULSE_SEPARATION 10  // usec
+#define MIN_PULSE_SEPARATION 10  // usec of minimum separation between pulses on one coil
 #define SUMMATION_MSEC 25        // how long for overlapping duty cycle period calculation
 #define DISPLAY_UPDATE_MSEC 250  // how often to update the music-playing display
-#define DEBOUNCE_DELAY 10        // msec for debounce delay
-#define POT_CHANGE_THRESHOLD 10  // fuzz magnitude for analog pots (about 1%)
+#define DEBOUNCE_DELAY 10        // msec for switch/button debounce delay
+#define POT_CHANGE_THRESHOLD 3   // fuzz magnitude for analog pots (about 0.3%)
 
 #define GreenLED  11             /* green light */
 #define RedLED    12             /* red light */
@@ -343,7 +359,7 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C display(U8G2_R0, U8X8_PIN_NONE);  // the OLED
 #define STRINGIFY(s) #s
 #define STRING(s) STRINGIFY(s)
 
-struct { // limits for each Tesla coil
+struct { // performance limits for each Tesla coil
    const unsigned min_pulsewidth, max_pulsewidth; // in usec
    const unsigned max_dutycycle_pct; // in percent
 } coil_limit[NUM_COILS] = {
@@ -351,7 +367,7 @@ struct { // limits for each Tesla coil
    {5, 150, 5 }   // the 12" OneTesla coil: more fragile
 };
 
-struct { // state information about our Tesla coils
+struct { // state information about each Tesla coil
    volatile bool doing_pulse;                     // is it currently doing a pulse
    unsigned int current_max_pulsewidth;           // width in usec, based on the volume pot and this coil's limits
    volatile unsigned long time_last_pulse_ended;  // micros() timestamp, which overflow in 70 minutes
@@ -359,8 +375,8 @@ struct { // state information about our Tesla coils
    unsigned int active_usec;                      // how many usec pulses were active since the last display
    int last_barheight;                            // the last height, in pixels, of the activity bar
    bool duty_cycle_exceeded;                      // was the duty cycle exceeded in the last summation period?
-   bool show_duty_cycle_exceeded;                 // is it to be noted on the display
-   uint32_t instruments[NUM_INSTRUMENTS / 32];    // bit vector of what instruments we play
+   bool show_duty_cycle_exceeded;                 // is that to be noted on the display?
+   uint32_t instruments[NUM_INSTRUMENTS / 32];    // bit vector of what instruments we play for the current song
 } tesla_coil[NUM_COILS] = {0 };
 
 // state information about our channels, which are the note-playing timers
@@ -370,15 +386,15 @@ byte channel_coils[NUM_CHANS] = {0 };      // bitmap of which coils this channel
 byte channel_volume[NUM_CHANS] = {100 };   // what volume this channel's note is playing at
 
 /* We use the Cortex k20 processor's FTM 0 flexible timer to generate active-low
-   oneshot pulses on any of the coils, starting at any time and for any
+   oneshot pulses on any of the four coils, starting at any time and for any
    duration up to a few milliseconds. We do that by running the FTM at a constant
    frequency and using up to 4 of its 8 "channels" in "set pin output high on match"
    mode, with each channel's target count computed to be the end of the pulse.
    We got tips on how to do this from this NXP forum posting:
    https://community.nxp.com/t5/S32K/S32K144-FTM-Output-Compare-for-Single-Pulse/m-p/844007#M3436
 
-   Note that the FTM "channels" are unrelated to the "channels" of the Playtune music bytestream,
-   which are really "tone generators".
+   Note that the FTM "channels" are unrelated to the "channels" of the Playtune
+   music bytestream, which are really "tone generators".
 
    The pulses are output on Teensy 3.2 "pin numbers" 20 through 23.
    Pin number and port notations are confusing. Here's the deal:
@@ -397,7 +413,6 @@ volatile int rotary_change = -1;            // rotary changes queued by the inte
 volatile int notechange;                    // how much to transcribe the score up or down
 unsigned int pulse_separation =             // required microseconds of separation between pulses when playing polyphonic music
    MIN_PULSE_SEPARATION;
-
 
 // display utility routines
 
@@ -523,6 +538,7 @@ void setup() {
    delay(250);
    digitalWrite(GreenLED, HIGH); }
 
+
 /* Start an active-low single pulse for "usec" microseconds on a Tesla coil.
    While playing scores, this is called from the Playtune interval timer
    interrupt routine for each rising edge of each note currently being played.
@@ -624,7 +640,12 @@ void show_rotary_name(void) {
 
 bool pot_changed (int pot) {  // Check if a pot has changed
    int newval = analogRead(pot_ports[pot]);
-   if (abs(newval - pot_values[pot]) < POT_CHANGE_THRESHOLD) return false;
+   int diff = newval - pot_values[pot];
+   if (diff < 0) diff = -diff; // abs() doesn't work -- why??
+   if (newval < 10 || newval > 1023 - 10) { // no threshold on the ends of the range
+      if (diff == 0) return false; }
+   else {
+      if (diff  < POT_CHANGE_THRESHOLD) return false; }
    pot_values[pot] = newval;
    return true; }
 
@@ -651,7 +672,7 @@ int get_pot_pulse_separation(int pot) { // return min pulse separation in usec: 
 
 int get_pot_frequency(int pot) { // return frequency in hertz: 1 to MAX_FREQUENCY
    pot_changed(pot);
-   return (pot_values[pot] * (MAX_FREQUENCY - 1) / 1023) + 1; }
+   return pot_values[pot] * (MAX_FREQUENCY - 1) / 1023 + 1; }
 
 bool pushbutton(void) {  // read debounced pushbutton, return true if pushed
    int current = digitalRead(PushButton);
@@ -744,8 +765,8 @@ void set_all_channel_pulsewidths(void) {
       set_channel_pulsewidth(chan, channel_volume[chan]); }
 #endif
 
-// Update duty cycle caculations for the coils, using two overlapping
-// measurement periods, each of length 2 * SUMMATION_MSEC.
+// Update duty cycle caculations for the coils in the background,
+// using two overlapping measurement periods of length 2 * SUMMATION_MSEC.
 // When pulses are generated, both sums are incremented by the pulse width.
 
 void duty_cycle_calcs(void) {
@@ -791,6 +812,8 @@ void duty_cycle_calcs(void) {
          if (tesla_coil[coil].duty_cycle_exceeded) tesla_coil[coil].show_duty_cycle_exceeded = true; }
       doing_sum1 = 1 - doing_sum1;  // switch to other summation interval
       last_calc_time = timenow; } }
+
+// update the display to show the current song-playing status
 
 static const struct scoredescr_t *current_scoredescr;
 void update_playing_status (void) {
@@ -849,10 +872,10 @@ void update_playing_status (void) {
 
 void reset_display(struct scoredescr_t const *descr) {
    display.clearBuffer();
-   display.drawStr(0, display.getMaxCharHeight(), descr->name); } // as much as fits on the first line
+   display.drawStr(0, display.getMaxCharHeight(), descr->name); } // as much of the name as fits on the first line
 
 void play_score (struct scoredescr_t const *descr) {
-   digitalWrite(RedLED, HIGH);
+   digitalWrite(RedLED, HIGH); // "playing"
    current_scoredescr = descr;
    pot_changed(POT0);
    unsigned notechange_initval = pot_values[POT0]; // initial note transposition point for score
@@ -868,28 +891,28 @@ void play_score (struct scoredescr_t const *descr) {
    pot_changed(POT3); // initial speed point for the score
    unsigned speed_initval = pot_values[POT3];
    tune_playscore(descr->scoreptr);   // start playing
-   tune_speed(100 + descr->speed); // speed is 100% (normal) based on that pot position, tweaked by score description
+   tune_speed(100 + descr->speed); // the speed is 100% (normal) based on that pot position, tweaked by score description
    reset_display(descr);
    display.clearBuffer();
    display.drawStr(0, display.getMaxCharHeight(), descr->name); // as much as fits on the first line
-   while (pushbutton()) update_playing_status(); // wait for button release
-   while (!pushbutton() && rotary_change == 0 // wait for next button push, or rotary switch change,
-          && tune_playing) { // or for tune to stop
+   while (pushbutton()) update_playing_status(); // wait for "play" button release
+   while (!pushbutton() && rotary_change == 0 // wait for the next button push, or a rotary switch change,
+          && tune_playing) { // or for the tune to stop
       update_playing_status();
       if (check_coil_switches()) { // check for coil switch changes
          set_coil_instruments(descr->assignments); // if so, redo instruments assignments to coils
          for (int chan = 0; chan < NUM_CHANS; ++chan) // and recompute channel_coils[]
             teslacoil_change_instrument(chan, channel_instrument[chan] );
-         set_coil_maxpulsewidths(POT1);
+         set_coil_maxpulsewidths(POT1); // and recompute maximum pulse widths
          reset_display(descr); }
       if (pot_changed(POT0)) {  // check for changed note transposition
          notechange = scale_pot(POT0, "notechange", -12, 12, descr->transpose, notechange_initval); } // +- one octave
       pot_changed(POT1); // update volume pot
       if (pot_changed(POT1)) { // check for changed volume
          set_coil_maxpulsewidths(POT1); }
-      if (pot_changed(POT2)) { // check for changed min pulse separation
+      if (pot_changed(POT2)) { // check for changed minimum pulse separation
          pulse_separation = get_pot_pulse_separation(POT2); }
-      if (pot_changed(POT3)) {  // check for changed speed
+      if (pot_changed(POT3)) {  // check for changed playback speed
          tune_speed(scale_pot(POT3, "speed", 50, 200, 100 + descr->speed, speed_initval)); } } // 1/2x to 2x
    if (tune_playing) tune_stopscore();
    digitalWrite(RedLED, LOW);
@@ -901,6 +924,7 @@ void play_score (struct scoredescr_t const *descr) {
 // playing this channel.  Multiple notes may be playing on the same coil simultaneously,
 // and multiple coils may be playing the same note.
 // Note that this is called from the timer interrupt routine, so don't do anything heavy-duty.
+// (Generating debugging output will screw up the timing.)
 
 void teslacoil_rising_edge(byte chan) {
    unsigned long timenow = micros();
@@ -911,7 +935,7 @@ void teslacoil_rising_edge(byte chan) {
             // and it doesn't violate the minimum pulse separation constraint
             && timenow > (tesla_coil[coilnum].time_last_pulse_ended + pulse_separation)) {
          int pulsewidth;
-         if (tesla_coil[coilnum].duty_cycle_exceeded)
+         if (tesla_coil[coilnum].duty_cycle_exceeded) // we're in duty-cycle-exceeded recovery
             pulsewidth = coil_limit[coilnum].min_pulsewidth; // use minimum pulse width to reduce duty cycle
          else {// Set the pulse width for this channel based on the velocity of the note, the maximum
             // pulse width for this coil, and the current setting of the volume pot.
@@ -924,7 +948,8 @@ void teslacoil_rising_edge(byte chan) {
                          + coil_limit[coilnum].min_pulsewidth; }
          if (TEST_VOLUME) {
             debug_print("time %lu coil %d chan %d vol %d minwidth %d maxwidth %d width %d\n",
-                        millis(), coilnum, chan, channel_volume[chan], coil_limit[coilnum].min_pulsewidth, tesla_coil[coilnum].current_max_pulsewidth, pulsewidth); }
+                        millis(), coilnum, chan, channel_volume[chan], coil_limit[coilnum].min_pulsewidth,
+                        tesla_coil[coilnum].current_max_pulsewidth, pulsewidth); }
          start_oneshot(coilnum, pulsewidth); } } }
 
 // These are called by the Playtunes music player to let us record and maybe change
@@ -956,65 +981,69 @@ void teslacoil_change_volume(byte chan, byte volume) {
 
 //  simple tone action routines
 
-unsigned onepulse_pulsewidth, onepulse_delayusec, onepulse_dutycycle; // displayed values
+unsigned pulses_pulsewidth, pulses_period;
+unsigned long pulses_lastdsp;
+IntervalTimer pulses_timer;
+#define PULSES_DSP_UPDATE_MSEC 100  // time between display changes
 
-void init_one_pulse(void) { // force update of display
-   onepulse_pulsewidth = onepulse_delayusec = onepulse_dutycycle = 0; }
+void do_pulses_ISR(void) { // interrupt that causes the next pulse
+   for (int coil = 0; coil < NUM_COILS; ++coil)
+      if (coil_on[coil]) // on all coils whose switches are on
+         start_oneshot(coil, pulses_pulsewidth );
+      else tesla_coil[coil].doing_pulse = false; }
 
-void do_one_pulse (void) { // do one pulse and pause for an inter-pulse delay
+void display_pulses (void) { // check for parameter changes and update the display
    // The delay (frequency) is set by POT0, and the pulse width (volume) by POT1.
-   reset_coils();
-   check_coil_switches();
-   unsigned pulsewidth = get_pot_pulsewidth(POT1);
-   unsigned delayusec = (1000000UL / get_pot_frequency(POT0)) - pulsewidth;
-   unsigned dutycycle = (100 * pulsewidth) / (delayusec + pulsewidth);
-   if (onepulse_pulsewidth != pulsewidth || onepulse_delayusec != delayusec || onepulse_dutycycle != dutycycle) { // update display
+   unsigned period = 1000000UL / get_pot_frequency(POT0);
+   if (pulses_period != period) { // frequency has changed
+      pulses_timer.update(pulses_period = period); }
+   pulses_pulsewidth = get_pot_pulsewidth(POT1);
+   if (millis() - pulses_lastdsp > PULSES_DSP_UPDATE_MSEC) { // don't update display too often b/c it takes a while
+      check_coil_switches(); // record any switch changes in coil_on[]
+      unsigned dutycycle = (100 * pulses_pulsewidth) / pulses_period;
       int coil;
       for (coil = 0; coil < NUM_COILS; ++coil) // see if any coil exceeds its duty cycle
          if (dutycycle > coil_limit[coil].max_dutycycle_pct) break;
       bool dutycycle_ok = coil == NUM_COILS;
       char buf[50];
-      sprintf(buf, "%u us, %u Hz", pulsewidth, 1000000 / (pulsewidth + delayusec));
       int yloc = display.getDisplayHeight() - 1 - display.getMaxCharHeight(); // second from bottom line
       display_clearline(yloc); // clear it first, to allow for transparent fonts
-      display.drawStr(0, yloc, buf);  // then write the new line
+      sprintf(buf, "%u us, %u Hz", pulses_pulsewidth, 1000000 / pulses_period);
+      display.drawStr(0, yloc, buf);  // then write the new text
       yloc = display.getDisplayHeight() - 1; // bottom line
-      display_clearline(yloc); // clear it first, to allow for transparent fonts
+      display_clearline(yloc);
       sprintf(buf, "%u%% %s", dutycycle, dutycycle_ok ? "" : "> " STRING(MAX_DUTYCYCLE_PCT) "% !!");
-      display.drawStr(0, display.getDisplayHeight() - 1, buf);
+      display.drawStr(0, yloc, buf);
       display.sendBuffer();
-      onepulse_pulsewidth = pulsewidth;
-      onepulse_delayusec = delayusec;
-      onepulse_dutycycle = dutycycle; }
-   for (int coil = 0; coil < NUM_COILS; ++coil)
-      if (coil_on[coil]) // on all coils whose switches are on
-         start_oneshot(coil, pulsewidth );
-      else tesla_coil[coil].doing_pulse = false;
-   bool busy; do { // wait for all coils to finish
-      busy = false;
-      for (int coil = 0; coil < NUM_COILS; ++coil)
-         busy |= tesla_coil[coil].doing_pulse; }
-   while (busy);
-   if (delayusec > 10000L) delay (delayusec / 1000);
-   else delayMicroseconds (delayusec); }
+      pulses_lastdsp = millis(); } }
 
+void init_pulses(void) {
+   digitalWrite(RedLED, HIGH);
+   reset_coils();
+   pulses_lastdsp = 0;
+   display_pulses();
+   pulses_timer.begin(do_pulses_ISR, pulses_period); }
+
+void stop_pulses(void) {
+   digitalWrite(RedLED, LOW);
+   pulses_timer.end(); }
+
+// output pulses until button is released
 void pulse_momentary(struct scoredescr_t const * descr) {
-   digitalWrite(RedLED, HIGH);
-   init_one_pulse();
-   while (pushbutton()) {
-      do_one_pulse(); }
-   digitalWrite(RedLED, LOW); }
+   init_pulses();
+   while (pushbutton()) display_pulses();
+   stop_pulses(); }
 
+// output pulses until button is pushed again or rotary switch is changed
 void pulse_hold(struct scoredescr_t const * descr) {
-   digitalWrite(RedLED, HIGH);
-   init_one_pulse();
+   init_pulses();
    bool button_released = false;
    do {
-      do_one_pulse();
+      display_pulses();
       if (!pushbutton()) button_released = true; }
    while ((!button_released || !pushbutton()) && rotary_change == 0);
-   digitalWrite(RedLED, LOW);
-   while (pushbutton()) ; } /* wait until button is released */
+   stop_pulses();
+   while (pushbutton()) ;  } /* wait until button is released */
 
 // the user input loop
 
@@ -1026,7 +1055,7 @@ void loop () {
       pot_changed(1);
       pot_changed(2);
       pot_changed(3);
-      // then execute the action routine based on the switch position
+      // then execute the action routine based on the rotary switch position
       assert(rotary_value >= 0 && rotary_value < NUM_ACTIONS, 3);
       (actions[rotary_value].rtn)(actions[rotary_value].descr);
       show_rotary_name(); } }
